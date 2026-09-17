@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#dfeaf5">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="반복 루틴">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+  <link rel="stylesheet" href="styles.css">
+  <title>반복 루틴</title>
+</head>
+<body>
+  <main class="app-shell" id="appShell">
+    <header class="topbar glass-panel">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">🌱</div>
+        <div class="brand-copy">
+          <h1>반복 루틴</h1>
+          <p id="todayLabel">오늘도 좋은 하루 되세요!</p>
+        </div>
+      </div>
+
+      <nav class="weekday-tabs" aria-label="요일 선택" id="weekdayTabs"></nav>
+
+      <div class="top-actions">
+        <button class="glass-button" type="button" id="importButton">동기화</button>
+        <button class="glass-button icon-button" type="button" id="menuButton" aria-label="더보기" aria-expanded="false">•••</button>
+      </div>
+
+      <div class="popup-menu" id="popupMenu" hidden>
+        <button type="button" id="importMenuButton">루틴 JSON 불러오기</button>
+        <button type="button" id="weatherRefreshButton">날씨 새로고침</button>
+        <button type="button" id="restoreSampleButton">내장 샘플로 복원</button>
+      </div>
+      <input type="file" id="routineFileInput" accept="application/json,.json" hidden>
+    </header>
+
+    <section class="dashboard">
+      <aside class="left-column">
+        <section class="calendar-card glass-panel">
+          <div class="section-heading calendar-heading">
+            <h2 id="calendarTitle">2026년 9월</h2>
+            <div class="calendar-actions">
+              <button class="mini-button" type="button" id="prevMonthButton" aria-label="이전 달">‹</button>
+              <button class="mini-button" type="button" id="nextMonthButton" aria-label="다음 달">›</button>
+            </div>
+          </div>
+          <div class="calendar-grid weekday-headings" aria-hidden="true">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div class="calendar-grid calendar-days" id="calendarDays"></div>
+          <button class="glass-button full-button" type="button" id="todayMonthButton">오늘</button>
+        </section>
+
+        <section class="weather-card glass-panel">
+          <div class="weather-heading">
+            <strong>서울</strong>
+            <span id="weatherUpdated">날씨 불러오는 중</span>
+          </div>
+          <div class="weather-main">
+            <div class="weather-symbol" id="weatherSymbol" aria-hidden="true">☀️</div>
+            <div>
+              <div class="weather-temp" id="weatherTemp">--°C</div>
+              <div class="weather-description" id="weatherDescription">날씨</div>
+              <div class="weather-humidity" id="weatherHumidity">습도 --%</div>
+            </div>
+          </div>
+          <div class="weather-error" id="weatherError" hidden></div>
+        </section>
+
+        <section class="progress-card soft-panel">
+          <div class="progress-label">오늘 진행</div>
+          <div class="progress-summary">
+            <strong id="progressPercent">0%</strong>
+            <span id="progressCount">0 / 0</span>
+          </div>
+          <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+        </section>
+      </aside>
+
+      <section class="routine-panel glass-panel">
+        <div class="routine-header">
+          <div class="clock-icon" aria-hidden="true">◷</div>
+          <div class="routine-heading-copy">
+            <h2>오늘의 루틴</h2>
+            <p>현재 시각 <strong id="currentClock">--:--</strong></p>
+          </div>
+          <div class="routine-header-status">
+            <strong id="currentRoutineHeadline">현재 루틴을 확인하는 중</strong>
+            <span id="currentRoutineTitle">잠시만 기다려 주세요.</span>
+          </div>
+        </div>
+
+        <div class="routine-list" id="routineList" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <footer class="statusbar">
+      <div><span class="status-dot"></span><span id="sourceStatus">내장 샘플</span></div>
+      <div id="sourceName">sample-routine.json</div>
+      <div id="lastUpdate">마지막 업데이트 --:--:--</div>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
