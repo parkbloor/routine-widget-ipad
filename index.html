@@ -28,16 +28,16 @@
       <nav class="weekday-tabs" aria-label="요일 선택" id="weekdayTabs"></nav>
 
       <div class="top-actions">
-        <button class="glass-button" type="button" id="importButton">동기화</button>
+        <button class="glass-button" type="button" id="importButton">HTML / JSON</button>
         <button class="glass-button icon-button" type="button" id="menuButton" aria-label="더보기" aria-expanded="false">•••</button>
       </div>
 
       <div class="popup-menu" id="popupMenu" hidden>
-        <button type="button" id="importMenuButton">루틴 JSON 불러오기</button>
+        <button type="button" id="importMenuButton">루틴 HTML / JSON 불러오기</button>
         <button type="button" id="weatherRefreshButton">날씨 새로고침</button>
         <button type="button" id="restoreSampleButton">내장 샘플로 복원</button>
       </div>
-      <input type="file" id="routineFileInput" accept="application/json,.json" hidden>
+      <input type="file" id="routineFileInput" accept=".html,.htm,.json,text/html,application/json" hidden>
     </header>
 
     <section class="dashboard">

@@ -74,8 +74,8 @@
       try {
         state.schedule = normalizeSchedule(JSON.parse(saved));
         const source = JSON.parse(localStorage.getItem(STORAGE_SOURCE) || '{}');
-        state.sourceName = source.name || 'routine.json';
-        state.sourceStatus = '저장된 루틴';
+        state.sourceName = source.name || 'routine_schedule.html';
+        state.sourceStatus = source.status || '저장된 루틴';
         return;
       } catch (_) {
         localStorage.removeItem(STORAGE_SCHEDULE);
@@ -98,9 +98,9 @@
     if (showMessage) showToast('내장 샘플 루틴으로 복원했습니다.');
   }
 
-  function saveImportedSchedule(name) {
+  function saveImportedSchedule(name, status) {
     localStorage.setItem(STORAGE_SCHEDULE, JSON.stringify(state.schedule));
-    localStorage.setItem(STORAGE_SOURCE, JSON.stringify({ name }));
+    localStorage.setItem(STORAGE_SOURCE, JSON.stringify({ name, status }));
   }
 
   function selectedItems() {
@@ -204,7 +204,7 @@
         els.currentRoutineTitle.textContent = `다음 ${formatMinute(next.start)} · ${next.title}`;
       } else {
         els.currentRoutineHeadline.textContent = selectedItems().length ? '오늘 루틴이 끝났어요' : '등록된 루틴이 없습니다';
-        els.currentRoutineTitle.textContent = selectedItems().length ? '오늘도 수고했어요.' : '동기화에서 JSON을 불러올 수 있어요.';
+        els.currentRoutineTitle.textContent = selectedItems().length ? '오늘도 수고했어요.' : '동기화에서 HTML 또는 JSON을 불러올 수 있어요.';
       }
     }
   }
@@ -345,16 +345,65 @@
     renderDynamic(new Date());
   }
 
-  async function importJsonFile(file) {
+  function cleanImportedText(value) {
+    const holder = document.createElement('textarea');
+    holder.innerHTML = String(value ?? '').replace(/<[^>]+>/g, '');
+    return holder.value.replace(/\s+/g, ' ').trim();
+  }
+
+  function scheduleFromHtml(htmlText) {
+    const doc = new DOMParser().parseFromString(String(htmlText || ''), 'text/html');
+    const dayPanels = [...doc.querySelectorAll('section.day-panel[id^="day-"]')];
+    if (!dayPanels.length) throw new Error('요일별 시간표 구조(section.day-panel)를 찾지 못했습니다.');
+
+    const schedule = { version: 1, days: {} };
+    for (let day = 0; day <= 6; day++) schedule.days[String(day)] = [];
+
+    for (const panel of dayPanels) {
+      const match = panel.id.match(/^day-(\d)$/);
+      if (!match) continue;
+      const day = Number(match[1]);
+      if (day < 0 || day > 6) continue;
+
+      for (const article of panel.querySelectorAll('article.routine')) {
+        const start = Number(article.getAttribute('data-start'));
+        const end = Number(article.getAttribute('data-end'));
+        const heading = article.querySelector('h3');
+        const title = cleanImportedText(heading?.innerHTML || heading?.textContent || '');
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > 1440 || !title) continue;
+
+        const tasks = [...article.querySelectorAll('label.task span')]
+          .map(span => cleanImportedText(span.innerHTML || span.textContent || '').replace(/,+$/, '').trim())
+          .filter(Boolean);
+
+        schedule.days[String(day)].push({ start, end, title, tasks });
+      }
+    }
+
+    const count = Object.values(schedule.days).reduce((sum, rows) => sum + rows.length, 0);
+    if (!count) throw new Error('HTML에서 루틴(article.routine)을 찾지 못했습니다.');
+    return normalizeSchedule(schedule);
+  }
+
+  async function importRoutineFile(file) {
     if (!file) return;
-    if (file.size > 2_000_000) throw new Error('JSON 파일이 너무 큽니다. 2MB 이하 파일을 사용해 주세요.');
+    if (file.size > 5_000_000) throw new Error('루틴 파일이 너무 큽니다. 5MB 이하 파일을 사용해 주세요.');
     const text = await file.text();
-    state.schedule = normalizeSchedule(JSON.parse(text));
-    state.sourceName = file.name || 'routine.json';
-    state.sourceStatus = 'JSON 연동됨';
-    saveImportedSchedule(state.sourceName);
+    const lower = (file.name || '').toLowerCase();
+    const looksJson = lower.endsWith('.json') || (file.type || '').includes('json');
+
+    if (looksJson) {
+      state.schedule = normalizeSchedule(JSON.parse(text));
+      state.sourceStatus = 'JSON 연동됨';
+    } else {
+      state.schedule = scheduleFromHtml(text);
+      state.sourceStatus = 'HTML 연동됨';
+    }
+
+    state.sourceName = file.name || (looksJson ? 'routine.json' : 'routine_schedule.html');
+    saveImportedSchedule(state.sourceName, state.sourceStatus);
     renderAll();
-    showToast(`${state.sourceName}을 불러왔습니다.`);
+    showToast(`${state.sourceName}을 적용했습니다.`);
   }
 
   function weatherDescription(code) {
@@ -444,7 +493,7 @@
     els.weatherRefreshButton.addEventListener('click', () => { closeMenu(); refreshWeather(true); });
     els.restoreSampleButton.addEventListener('click', () => restoreSample(true).catch(error => showToast(error.message)));
     els.routineFileInput.addEventListener('change', () => {
-      importJsonFile(els.routineFileInput.files?.[0]).catch(error => showToast(`불러오기 실패: ${error.message}`));
+      importRoutineFile(els.routineFileInput.files?.[0]).catch(error => showToast(`불러오기 실패: ${error.message}`));
     });
     els.prevMonthButton.addEventListener('click', () => {
       state.displayedMonth = new Date(state.displayedMonth.getFullYear(), state.displayedMonth.getMonth() - 1, 1);
